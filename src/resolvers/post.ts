@@ -40,11 +40,11 @@ export class PostResolver {
     const sqlQuery = getConnection()
       .getRepository(Post)
       .createQueryBuilder()
-      .orderBy('"createdAt"', 'DESC')
+      .orderBy('id', 'DESC')
       .take(realLimit);
     if (cursor) {
-      sqlQuery.where('"createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor)),
+      sqlQuery.where('id < :cursor', {
+        cursor: parseInt(cursor),
       });
     }
     return sqlQuery.getMany();
