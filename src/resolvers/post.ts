@@ -9,6 +9,8 @@ import {
   Field,
   Ctx,
   UseMiddleware,
+  FieldResolver,
+  Root,
 } from 'type-graphql';
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
@@ -22,8 +24,13 @@ class PostInput {
   text: string;
 }
 
-@Resolver()
+@Resolver(Post)
 export class PostResolver {
+  @FieldResolver(() => String)
+  textSnippet(@Root() root: Post): string {
+    return root.text.slice(0, 50);
+  }
+
   @Query(() => [Post])
   posts(
     @Arg('limit', () => Int) limit: number,
