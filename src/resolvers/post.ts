@@ -12,6 +12,7 @@ import {
 } from 'type-graphql';
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
+import { getConnection } from 'typeorm';
 
 @InputType()
 class PostInput {
@@ -24,13 +25,27 @@ class PostInput {
 @Resolver()
 export class PostResolver {
   @Query(() => [Post])
-  posts(): Promise<Post[]> {
-    return Post.find();
+  posts(
+    @Arg('limit', () => Int) limit: number,
+    @Arg('cursor', () => String, { nullable: true }) cursor: string
+  ): Promise<Post[]> {
+    const realLimit = Math.min(50, limit);
+    const sqlQuery = getConnection()
+      .getRepository(Post)
+      .createQueryBuilder()
+      .orderBy('"createdAt"', 'DESC')
+      .take(realLimit);
+    if (cursor) {
+      sqlQuery.where('"createdAt" < :cursor', {
+        cursor: new Date(parseInt(cursor)),
+      });
+    }
+    return sqlQuery.getMany();
   }
 
   @Query(() => Post, { nullable: true })
-  post(@Arg('_id', () => Int) _id: number): Promise<Post | undefined> {
-    return Post.findOne({ where: { _id } });
+  post(@Arg('id', () => Int) id: number): Promise<Post | undefined> {
+    return Post.findOne({ where: { id } });
   }
 
   @Mutation(() => Post)
@@ -47,23 +62,23 @@ export class PostResolver {
 
   @Mutation(() => Post)
   async updatePost(
-    @Arg('_id', () => Int) _id: number,
+    @Arg('id', () => Int) id: number,
     @Arg('title', () => String) title: string
   ): Promise<Post | null> {
-    const post = await Post.findOne({ where: { _id } });
+    const post = await Post.findOne({ where: { id } });
     if (!post) {
       return null;
     }
     if (typeof title !== 'undefined') {
-      await Post.update(_id, { title });
+      await Post.update(id, { title });
     }
     // ToDo: Check if it's really returning the updated post
     return post;
   }
 
   @Mutation(() => Boolean)
-  async deletePost(@Arg('_id', () => Int) _id: number): Promise<boolean> {
-    Post.delete(_id);
+  async deletePost(@Arg('id', () => Int) id: number): Promise<boolean> {
+    Post.delete(id);
     return true;
   }
 }

@@ -16,9 +16,10 @@ import cors from 'cors';
 import { createConnection } from 'typeorm';
 import { Post } from './entities/Post';
 import { User } from './entities/User';
+import path from 'path';
 
 const main = async () => {
-  await createConnection({
+  const typeorm = await createConnection({
     type: 'postgres',
     database: 'lireddit2',
     username: 'postgres',
@@ -26,9 +27,9 @@ const main = async () => {
     logging: true,
     synchronize: true,
     entities: [Post, User],
+    migrations: [path.join(__dirname, '/migrations/*')],
   });
-  // const orm = await MikroORM.init(mikroConfig);
-  // await orm.getMigrator().up();
+  await typeorm.runMigrations();
 
   const app = express();
 
