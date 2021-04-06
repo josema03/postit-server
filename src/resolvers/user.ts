@@ -50,7 +50,7 @@ export class UserResolver {
     if (!req.session.userId) {
       return undefined;
     }
-    const user = await User.findOne({ where: { _id: req.session.userId } });
+    const user = await User.findOne({ where: { id: req.session.userId } });
     return user;
   }
 
@@ -67,7 +67,7 @@ export class UserResolver {
     const token = v4();
     await redis.set(
       FORGET_PASSWORD_PREFIX + token,
-      user._id,
+      user.id,
       'ex',
       1000 * 60 * 60 * 24 * 3
     );
@@ -124,13 +124,13 @@ export class UserResolver {
 
     const hashedPassword = await argon2.hash(newPassword);
     User.update(
-      { _id: parsedUserId },
+      { id: parsedUserId },
       {
         password: hashedPassword,
       }
     );
 
-    req.session.userId = user._id;
+    req.session.userId = user.id;
     redis.del(redisKey);
 
     return { user };
@@ -174,7 +174,7 @@ export class UserResolver {
       return console.log(err.message);
     }
 
-    req.session.userId = user._id;
+    req.session.userId = user.id;
     return { user };
   }
 
@@ -211,7 +211,7 @@ export class UserResolver {
       };
     }
 
-    req.session.userId = user._id;
+    req.session.userId = user.id;
     return { user };
   }
 
