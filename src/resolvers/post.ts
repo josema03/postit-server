@@ -11,6 +11,7 @@ import {
   UseMiddleware,
   FieldResolver,
   Root,
+  ObjectType,
 } from 'type-graphql';
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
@@ -24,6 +25,15 @@ class PostInput {
   text: string;
 }
 
+@ObjectType()
+class PaginatedPosts {
+  @Field(() => [Post])
+  posts: Post[];
+
+  @Field()
+  hasMore: boolean;
+}
+
 @Resolver(Post)
 export class PostResolver {
   @FieldResolver(() => String)
@@ -31,23 +41,28 @@ export class PostResolver {
     return root.text.slice(0, 50);
   }
 
-  @Query(() => [Post])
-  posts(
+  @Query(() => PaginatedPosts)
+  async posts(
     @Arg('limit', () => Int) limit: number,
     @Arg('cursor', () => String, { nullable: true }) cursor: string
-  ): Promise<Post[]> {
+  ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit);
+    const realLimitPlusOne = realLimit + 1;
     const sqlQuery = getConnection()
       .getRepository(Post)
       .createQueryBuilder()
       .orderBy('id', 'DESC')
-      .take(realLimit);
+      .take(realLimitPlusOne);
     if (cursor) {
       sqlQuery.where('id < :cursor', {
         cursor: parseInt(cursor),
       });
     }
-    return sqlQuery.getMany();
+    const posts = await sqlQuery.getMany();
+    return {
+      posts: posts.slice(0, realLimit),
+      hasMore: posts.length === realLimitPlusOne,
+    };
   }
 
   @Query(() => Post, { nullable: true })
