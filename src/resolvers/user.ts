@@ -4,11 +4,13 @@ import {
   Arg,
   Ctx,
   Field,
+  FieldResolver,
   InputType,
   Mutation,
   ObjectType,
   Query,
   Resolver,
+  Root,
 } from 'type-graphql';
 import argon2 from 'argon2';
 import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from '../constants';
@@ -43,8 +45,16 @@ class UsernamePasswordInput {
   password: string;
 }
 
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+  @FieldResolver()
+  email(@Root() user: User, @Ctx() { req }: MyContext): string {
+    if (req.session.userId === user.id) {
+      return user.email;
+    }
+    return '';
+  }
+
   @Query(() => User, { nullable: true })
   async me(@Ctx() { req }: MyContext): Promise<User | undefined> {
     if (!req.session.userId) {

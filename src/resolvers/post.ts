@@ -50,11 +50,12 @@ export class PostResolver {
     const realLimitPlusOne = realLimit + 1;
     const sqlQuery = getConnection()
       .getRepository(Post)
-      .createQueryBuilder()
-      .orderBy('id', 'DESC')
+      .createQueryBuilder('post')
+      .innerJoinAndSelect('post.creator', 'creator')
+      .orderBy('post.id', 'DESC')
       .take(realLimitPlusOne);
     if (cursor) {
-      sqlQuery.where('id < :cursor', {
+      sqlQuery.where('post.id < :cursor', {
         cursor: parseInt(cursor),
       });
     }
