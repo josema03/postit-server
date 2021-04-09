@@ -41,6 +41,18 @@ export class PostResolver {
     return root.text.slice(0, 50);
   }
 
+  @FieldResolver(() => Int, { nullable: true })
+  async voteStatus(
+    @Root() root: Post,
+    @Ctx() { req }: MyContext
+  ): Promise<number | undefined> {
+    const { userId } = req.session;
+    if (!userId) {
+      return undefined;
+    }
+    return root.upvote.find((vote) => vote.userId === userId)?.value || 0;
+  }
+
   @Query(() => PaginatedPosts)
   async posts(
     @Arg('limit', () => Int) limit: number,
@@ -52,10 +64,11 @@ export class PostResolver {
       .getRepository(Post)
       .createQueryBuilder('post')
       .innerJoinAndSelect('post.creator', 'creator')
+      .leftJoinAndSelect('post.upvote', 'upvote')
       .orderBy('post.id', 'DESC')
       .take(realLimitPlusOne);
     if (cursor) {
-      sqlQuery.where('post.id < :cursor', {
+      sqlQuery.andWhere('post.id < :cursor', {
         cursor: parseInt(cursor),
       });
     }
@@ -67,8 +80,15 @@ export class PostResolver {
   }
 
   @Query(() => Post, { nullable: true })
-  post(@Arg('id', () => Int) id: number): Promise<Post | undefined> {
-    return Post.findOne({ where: { id } });
+  async post(@Arg('id', () => Int) id: number): Promise<Post | undefined> {
+    const post = await getConnection()
+      .getRepository(Post)
+      .createQueryBuilder('post')
+      .innerJoinAndSelect('post.creator', 'creator')
+      .leftJoinAndSelect('post.upvote', 'upvote')
+      .where(`post.id = ${id}`)
+      .getOne();
+    return post;
   }
 
   @Mutation(() => Post)

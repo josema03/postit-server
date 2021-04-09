@@ -17,6 +17,8 @@ import { createConnection } from 'typeorm';
 import { Post } from './entities/Post';
 import { User } from './entities/User';
 import path from 'path';
+import { Upvote } from './entities/Upvote';
+import { VoteResolver } from './resolvers/vote';
 
 const main = async () => {
   const typeorm = await createConnection({
@@ -26,7 +28,7 @@ const main = async () => {
     password: 'postgres',
     logging: true,
     synchronize: true,
-    entities: [Post, User],
+    entities: [Post, User, Upvote],
     migrations: [path.join(__dirname, '/migrations/*')],
   });
   await typeorm.runMigrations();
@@ -64,7 +66,7 @@ const main = async () => {
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver, PostResolver, UserResolver],
+      resolvers: [HelloResolver, PostResolver, UserResolver, VoteResolver],
       validate: false,
     }),
     context: ({ req, res }): MyContext => ({ req, res, redis }),
