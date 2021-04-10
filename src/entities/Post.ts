@@ -15,7 +15,7 @@ import { User } from './User';
 @ObjectType()
 @Entity()
 export class Post extends BaseEntity {
-  @Field()
+  @Field(() => Int)
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -27,14 +27,14 @@ export class Post extends BaseEntity {
   @Column()
   text!: string;
 
-  @Field()
+  @Field(() => Int)
   @Column({ type: 'int', default: 0 })
   points!: number;
 
   @Field(() => Int, { nullable: true })
   voteStatus!: number | null;
 
-  @Field()
+  @Field(() => Int)
   @Column()
   creatorId: number;
 
