@@ -15,7 +15,7 @@ import { MyContext } from '../types';
 @Resolver(Comment)
 export class CommentResolver {
   @Query(() => [Comment], { nullable: true })
-  async getComments(
+  async comments(
     @Arg('postId', () => Int) postId: number,
     @Arg('limit', () => Int) limit: number,
     @Arg('cursor', { nullable: true }) cursor: string,
