@@ -20,15 +20,33 @@ import { MyContext } from '../types';
 
 @ObjectType()
 class PaginatedComments {
+  @Field(() => String)
+  id: string;
+
   @Field(() => [Comment])
   result: Comment[];
 
   @Field(() => Boolean)
   hasMore: boolean;
 }
-
 @Resolver(Comment)
 export class CommentResolver {
+  @FieldResolver(() => Boolean)
+  async hasResponse(@Root() root: Comment): Promise<boolean> {
+    const { id: parentCommentId, postId, parentPath } = root;
+
+    const response = await getConnection()
+      .getRepository(Comment)
+      .createQueryBuilder('comment')
+      .where('comment."postId" = :postId', { postId })
+      .andWhere('comment."parentPath" = :composedParentPath', {
+        composedParentPath: parentPath.concat(`${parentCommentId}/`),
+      })
+      .getOne();
+
+    return !!response;
+  }
+
   @FieldResolver(() => User)
   async user(@Root() root: Comment): Promise<User> {
     if (root.user) {
@@ -44,17 +62,17 @@ export class CommentResolver {
   }
 
   @FieldResolver(() => Post)
-  async post(@Root() root: Comment): Promise<Post> {
+  async post(@Root() root: Comment): Promise<Post | undefined> {
     if (root.post) {
       return root.post;
     }
 
     const { postId } = root;
-    return (await getConnection()
+    return await getConnection()
       .getRepository(Post)
       .createQueryBuilder('post')
       .where('post.id = :postId', { postId })
-      .getOne()) as Post;
+      .getOne();
   }
 
   @Query(() => PaginatedComments, { nullable: true })
@@ -86,8 +104,9 @@ export class CommentResolver {
     const comments = await sqlCommentsQuery.getMany();
 
     return {
-      hasMore: comments.length === realLimitPlusOne,
+      id: parentPath || '/',
       result: comments.slice(0, realLimit),
+      hasMore: comments.length === realLimitPlusOne,
     };
   }
 

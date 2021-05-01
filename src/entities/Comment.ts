@@ -27,10 +27,6 @@ export class Comment extends BaseEntity {
   @Column()
   parentPath: string;
 
-  // @Field(() => Int, { nullable: true })
-  // @Column({ nullable: true })
-  // parentId: number;
-
   @Field(() => String)
   @CreateDateColumn()
   createdAt: Date;
@@ -54,4 +50,7 @@ export class Comment extends BaseEntity {
   @Field(() => Post)
   @ManyToOne(() => Post, (post) => post.comments)
   post: Post;
+
+  @Field(() => Boolean)
+  hasResponse: boolean;
 }
