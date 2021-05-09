@@ -52,5 +52,6 @@ export class Comment extends BaseEntity {
   post: Post;
 
   @Field(() => Boolean)
+  @Column({ default: false, nullable: true })
   hasResponse: boolean;
 }

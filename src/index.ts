@@ -32,6 +32,7 @@ const main = async () => {
     synchronize: true,
     entities: [Post, User, Upvote, Comment],
     migrations: [path.join(__dirname, '/migrations/*')],
+    // dropSchema: true,
   });
   await typeorm.runMigrations();
 

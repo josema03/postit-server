@@ -31,22 +31,6 @@ class PaginatedComments {
 }
 @Resolver(Comment)
 export class CommentResolver {
-  @FieldResolver(() => Boolean)
-  async hasResponse(@Root() root: Comment): Promise<boolean> {
-    const { id: parentCommentId, postId, parentPath } = root;
-
-    const response = await getConnection()
-      .getRepository(Comment)
-      .createQueryBuilder('comment')
-      .where('comment."postId" = :postId', { postId })
-      .andWhere('comment."parentPath" = :composedParentPath', {
-        composedParentPath: parentPath.concat(`${parentCommentId}/`),
-      })
-      .getOne();
-
-    return !!response;
-  }
-
   @FieldResolver(() => User)
   async user(@Root() root: Comment): Promise<User> {
     if (root.user) {
@@ -122,6 +106,30 @@ export class CommentResolver {
 
     if (!userId) {
       return undefined;
+    }
+
+    const parentCommentId =
+      parentPath && parentPath !== '/'
+        ? parseInt(
+            parentPath
+              .split('/')
+              .filter((commentId) => commentId !== '')
+              .pop() as string
+          )
+        : null;
+    const parentComment = parentCommentId
+      ? await Comment.find({
+          where: { id: parentCommentId },
+        })
+      : [null];
+
+    if (parentComment[0] && !parentComment[0].hasResponse) {
+      await getConnection()
+        .createQueryBuilder()
+        .update(Comment)
+        .set({ hasResponse: true })
+        .where('id = :id', { id: parentComment[0].id })
+        .execute();
     }
 
     const postedComment = await getConnection()
